@@ -385,8 +385,7 @@ jobs:
         if: steps.build.outputs.build_succeeded != 'true'
         run: |
           python "$GITHUB_WORKSPACE/scripts/diagnose_failure.py" \
-            --root "${{ steps.extract.outputs.project_root }}" \
-            --log-dir "$GITHUB_WORKSPACE/.androidforge/logs" || true
+            --root "${{ steps.extract.outputs.project_root }}" || true
 
       # ---------------------------------------------------------------------
       # Step 16: Build summary (always)
