@@ -182,7 +182,19 @@ def apply_fixes(detect: dict, fixes: list[dict], android_sdk_root: str) -> list[
             # The workflow will run `gradle wrapper` to regenerate; we just flag it.
             applied.append("Flagged wrapper for regeneration via `gradle wrapper`")
 
-    # Always disable build cache & parallel for very old gradle (safer)
+    # Kotlin 2.x/modern Gradle can fail strict JVM-target validation when a
+    # legacy Android project compiles Java at 1.8 while Kotlin defaults to 17.
+    # Keep the source project untouched, but relax validation in the temporary
+    # build workspace so AndroidForge can compile the existing project.
+    if detect.get("project_type") == "gradle" and detect.get("subtype") == "kotlin":
+        gradle_props = root / "gradle.properties"
+        content = gradle_props.read_text(encoding="utf-8", errors="replace") if gradle_props.exists() else ""
+        key = "kotlin.jvm.target.validation.mode="
+        if key not in content:
+            with gradle_props.open("a", encoding="utf-8") as f:
+                f.write("\n# AndroidForge compatibility: allow legacy Java 8 + Kotlin 17 targets\n")
+                f.write("kotlin.jvm.target.validation.mode=warning\n")
+            applied.append("Relaxed Kotlin JVM target validation for legacy Java/Kotlin target mismatch")
     return applied
 
 
