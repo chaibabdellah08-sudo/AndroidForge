@@ -186,7 +186,7 @@ def apply_fixes(detect: dict, fixes: list[dict], android_sdk_root: str) -> list[
     # legacy Android project compiles Java at 1.8 while Kotlin defaults to 17.
     # Keep the source project untouched, but relax validation in the temporary
     # build workspace so AndroidForge can compile the existing project.
-    if detect.get("project_type") == "gradle" and detect.get("subtype") == "kotlin":
+    if detect.get("project_type") == "gradle" and (detect.get("subtype") == "kotlin" or kotlin_v):
         gradle_props = root / "gradle.properties"
         content = gradle_props.read_text(encoding="utf-8", errors="replace") if gradle_props.exists() else ""
         key = "kotlin.jvm.target.validation.mode="
