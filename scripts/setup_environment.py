@@ -224,7 +224,7 @@ def main() -> int:
     if not chosen_gradle:
         chosen_gradle = pick_gradle_for_agp(agp, rules)
     if not chosen_gradle:
-        chosen_gradle = "8.0"  # safe modern fallback
+        chosen_gradle = "8.11.1"  # modern JDK 17 fallback; fixes projects requiring Gradle 8.11.1+
 
     # Determine if wrapper can be used
     use_wrapper = bool(wrapper.get("present"))
