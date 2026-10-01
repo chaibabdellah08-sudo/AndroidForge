@@ -180,7 +180,7 @@ jobs:
         continue-on-error: true
         uses: android-actions/setup-android@v3
         with:
-          packages: "platform-tools build-tools;34.0.0 build-tools;33.0.2 build-tools;32.0.0 build-tools;30.0.3 platforms;android-34 platforms;android-33 platforms;android-31 platforms;android-30 platforms;android-29 platforms;android-28 platforms;android-26 platforms;android-25"
+          packages: "platform-tools build-tools;36.0.0 build-tools;35.0.0 build-tools;34.0.0 build-tools;33.0.2 build-tools;32.0.0 build-tools;30.0.3 platforms;android-36 platforms;android-35 platforms;android-34 platforms;android-33 platforms;android-31 platforms;android-30 platforms;android-29 platforms;android-28 platforms;android-26 platforms;android-25"
 
       - name: Set up Android SDK (fallback via sdkmanager)
         if: steps.sdk_action.outcome == 'failure'
@@ -193,10 +193,14 @@ jobs:
           echo "Using sdkmanager at: $SDKMGR"
           for pkg in \
             "platform-tools" \
+            "build-tools;36.0.0" \
+            "build-tools;35.0.0" \
             "build-tools;34.0.0" \
             "build-tools;33.0.2" \
             "build-tools;32.0.0" \
             "build-tools;30.0.3" \
+            "platforms;android-36" \
+            "platforms;android-35" \
             "platforms;android-34" \
             "platforms;android-33" \
             "platforms;android-31" \
