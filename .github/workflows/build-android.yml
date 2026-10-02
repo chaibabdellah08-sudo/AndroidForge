@@ -268,6 +268,35 @@ jobs:
             gradle-
 
       # ---------------------------------------------------------------------
+      # Step 10.5: Configure optional Play signing
+      # ---------------------------------------------------------------------
+      - name: Configure Play signing
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -e
+          ROOT="${{ steps.extract.outputs.project_root }}"
+          SIGN_DIR="$RUNNER_TEMP/androidforge-signing"
+          mkdir -p "$SIGN_DIR"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$SIGN_DIR/upload-key.jks"
+          chmod 600 "$SIGN_DIR/upload-key.jks"
+          export ANDROID_KEYSTORE_FILE="$SIGN_DIR/upload-key.jks"
+          python - "$ROOT/app/build.gradle" <<'PY'
+          import pathlib, sys
+          p = pathlib.Path(sys.argv[1])
+          s = p.read_text(encoding="utf-8")
+          if "signingConfigs {" not in s:
+              s = s.replace("    buildTypes {", "    signingConfigs {\n        release {\n            storeFile file(System.getenv('ANDROID_KEYSTORE_FILE'))\n            storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')\n            keyAlias System.getenv('ANDROID_KEY_ALIAS')\n            keyPassword System.getenv('ANDROID_KEY_PASSWORD')\n        }\n    }\n    buildTypes {", 1)
+          if "signingConfig signingConfigs.release" not in s:
+              s = s.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
+          p.write_text(s, encoding="utf-8")
+          PY
+
+      # ---------------------------------------------------------------------
       # Step 11: Build the project (writes build.json)
       # ---------------------------------------------------------------------
       - name: Build project
