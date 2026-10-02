@@ -270,7 +270,7 @@ def main() -> int:
         build_commands = [
             [gradle_cmd, "assembleDebug"],
             [gradle_cmd, "assembleRelease"],
-            [gradle_cmd, "bundleDebug"],
+            [gradle_cmd, "bundleRelease"],
         ]
 
     result = {
