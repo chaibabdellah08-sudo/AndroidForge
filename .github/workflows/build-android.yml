@@ -122,6 +122,32 @@ jobs:
         run: python scripts/extract_zip.py --zip "${{ steps.acquire.outputs.zip_path }}"
 
       # ---------------------------------------------------------------------
+      # Step 2.5: Apply safe source compatibility patch for SunaMishkat
+      # ---------------------------------------------------------------------
+      - name: Patch SunaMishkat Adhan card compile issue
+        if: always()
+        run: |
+          ROOT="${{ steps.extract.outputs.project_root }}"
+          FILE="$ROOT/app/src/main/java/com/chaibcalligraphy/sunamishkat/AdhanAlertActivity.java"
+          if [ -f "$FILE" ]; then
+            python - "$FILE" <<'PY'
+import pathlib,sys
+p=pathlib.Path(sys.argv[1])
+s=p.read_text(encoding="utf-8")
+old='TextView prayer=text(title,31,WHITE,Gravity.CENTER);prayer.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));shell.addView(prayer,new LinearLayout.LayoutParams(-1,dp(42)));'
+new='TextView prayerTitle=text(title,31,WHITE,Gravity.CENTER);prayerTitle.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));shell.addView(prayerTitle,new LinearLayout.LayoutParams(-1,dp(42)));'
+if old in s:
+    s=s.replace(old,new,1)
+    p.write_text(s,encoding="utf-8")
+    print("Patched AdhanAlertActivity prayer TextView variable.")
+else:
+    print("No AdhanAlertActivity duplicate-variable patch needed.")
+PY
+          else
+            echo "AdhanAlertActivity.java not found; skipping app-specific patch."
+          fi
+
+      # ---------------------------------------------------------------------
       # Step 3: Detect project (writes detection.json)
       # ---------------------------------------------------------------------
       - name: Detect project type
