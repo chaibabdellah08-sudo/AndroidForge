@@ -344,6 +344,43 @@ jobs:
           cat "$GITHUB_WORKSPACE/build.json"
 
       # ---------------------------------------------------------------------
+      # Step 11.5: Ensure release AABs are signed
+      # Gradle signing is configured above, but this explicit JAR signing pass
+      # guarantees the final AAB artifact is signed before collection/upload.
+      # ---------------------------------------------------------------------
+      - name: Sign release AABs
+        if: env.PLAY_SIGNING_ENABLED == 'true' && steps.build.outputs.build_succeeded == 'true'
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -e
+          ROOT="${{ steps.extract.outputs.project_root }}"
+          found=0
+          while IFS= read -r -d '' AAB; do
+            found=1
+            echo "Checking AAB: $AAB"
+            if jarsigner -verify -strict "$AAB" >/tmp/jarsigner-verify.log 2>&1; then
+              echo "Already signed: $AAB"
+            else
+              echo "Signing: $AAB"
+              jarsigner \\
+                -keystore "$ANDROID_KEYSTORE_FILE" \\
+                -storepass:env ANDROID_KEYSTORE_PASSWORD \\
+                -keypass:env ANDROID_KEY_PASSWORD \\
+                -signedjar "$AAB.signed" \\
+                "$AAB" "$ANDROID_KEY_ALIAS"
+              mv "$AAB.signed" "$AAB"
+            fi
+            jarsigner -verify -strict -verbose "$AAB" >/tmp/jarsigner-final.log 2>&1
+            echo "Verified signed AAB: $AAB"
+          done < <(find "$ROOT" -type f -name '*.aab' -print0)
+          if [ "$found" -eq 0 ]; then
+            echo "No AAB files found to sign."
+          fi
+
+      # ---------------------------------------------------------------------
       # Step 12: Collect APKs (writes collect.json; runs even on build failure)
       # ---------------------------------------------------------------------
       - name: Collect APKs
