@@ -307,10 +307,13 @@ jobs:
           import pathlib, sys
           p = pathlib.Path(sys.argv[1])
           s = p.read_text(encoding="utf-8")
+          import re
           if "signingConfigs {" not in s:
               s = s.replace("    buildTypes {", "    signingConfigs {\n        release {\n            storeFile file(System.getenv('ANDROID_KEYSTORE_FILE'))\n            storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')\n            keyAlias System.getenv('ANDROID_KEY_ALIAS')\n            keyPassword System.getenv('ANDROID_KEY_PASSWORD')\n        }\n    }\n    buildTypes {", 1)
           if "signingConfig signingConfigs.release" not in s:
-              s = s.replace("        release {", "        release {\n            signingConfig signingConfigs.release", 1)
+              m = re.search(r"(buildTypes\s*\{\s*release\s*\{)", s)
+              if m:
+                  s = s[:m.end()] + "\n            signingConfig signingConfigs.release" + s[m.end():]
           p.write_text(s, encoding="utf-8")
           PY
 
