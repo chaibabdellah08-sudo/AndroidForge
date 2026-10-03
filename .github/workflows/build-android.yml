@@ -348,7 +348,7 @@ jobs:
       # Gradle signing is configured above, but this explicit JAR signing pass
       # guarantees the final AAB artifact is signed before collection/upload.
       # ---------------------------------------------------------------------
-      - name: Sign release AABs
+      - name: Verify and sign release AABs
         if: env.PLAY_SIGNING_ENABLED == 'true' && steps.build.outputs.build_succeeded == 'true'
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -361,24 +361,24 @@ jobs:
           while IFS= read -r -d '' AAB; do
             found=1
             echo "Checking AAB: $AAB"
-            if jarsigner -verify -strict "$AAB" >/tmp/jarsigner-verify.log 2>&1; then
-              echo "Already signed: $AAB"
+            if unzip -l "$AAB" | grep -Eq 'META-INF/[^ ]+\.(RSA|DSA|EC|SIG)'; then
+              echo "AAB already contains a signature: $AAB"
             else
-              echo "Signing: $AAB"
-              jarsigner \\
-                -keystore "$ANDROID_KEYSTORE_FILE" \\
-                -storepass:env ANDROID_KEYSTORE_PASSWORD \\
-                -keypass:env ANDROID_KEY_PASSWORD \\
-                -signedjar "$AAB.signed" \\
+              echo "AAB has no signature; signing: $AAB"
+              jarsigner \
+                -keystore "$ANDROID_KEYSTORE_FILE" \
+                -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+                -keypass "$ANDROID_KEY_PASSWORD" \
                 "$AAB" "$ANDROID_KEY_ALIAS"
-              mv "$AAB.signed" "$AAB"
             fi
-            jarsigner -verify -strict -verbose "$AAB" >/tmp/jarsigner-final.log 2>&1
+            jarsigner -verify -verbose "$AAB" >/tmp/jarsigner-final.log 2>&1
             echo "Verified signed AAB: $AAB"
           done < <(find "$ROOT" -type f -name '*.aab' -print0)
           if [ "$found" -eq 0 ]; then
             echo "No AAB files found to sign."
+            exit 1
           fi
+
 
       # ---------------------------------------------------------------------
       # Step 12: Collect APKs (writes collect.json; runs even on build failure)
