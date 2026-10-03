@@ -79,6 +79,8 @@ jobs:
     name: Build APK
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      PLAY_SIGNING_ENABLED: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     outputs:
       project_type: ${{ steps.detect.outputs.project_type }}
       build_succeeded: ${{ steps.build.outputs.build_succeeded }}
@@ -286,7 +288,7 @@ jobs:
       # Step 10.5: Configure optional Play signing
       # ---------------------------------------------------------------------
       - name: Configure Play signing
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.PLAY_SIGNING_ENABLED == 'true'
         env:
           SIGNING_ENABLED: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
