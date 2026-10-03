@@ -286,7 +286,7 @@ jobs:
       # Step 10.5: Configure optional Play signing
       # ---------------------------------------------------------------------
       - name: Configure Play signing
-        if: env.SIGNING_ENABLED == 'true'
+  if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
         env:
           SIGNING_ENABLED: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
