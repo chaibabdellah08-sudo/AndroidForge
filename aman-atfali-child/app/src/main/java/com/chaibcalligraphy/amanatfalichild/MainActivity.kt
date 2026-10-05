@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.*
 import android.graphics.Bitmap
+import android.view.View
 import android.widget.*
 import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
@@ -19,7 +20,11 @@ class MainActivity:ComponentActivity(){
     private lateinit var server:EditText; private lateinit var name:EditText; private lateinit var qr:ImageView
     private lateinit var code:TextView; private lateinit var status:TextView; private lateinit var start:Button
     private var childCode=""; private var base=""
-    override fun onCreate(b:Bundle?){super.onCreate(b);setContentView(R.layout.activity_main)
+    override fun onCreate(b:Bundle?){
+        super.onCreate(b)
+        setContentView(R.layout.activity_main)
+        window.statusBarColor = android.graphics.Color.rgb(245,248,252)
+        window.navigationBarColor = android.graphics.Color.rgb(245,248,252)
         server=findViewById(R.id.server);name=findViewById(R.id.childName);qr=findViewById(R.id.qr);code=findViewById(R.id.code);status=findViewById(R.id.status);start=findViewById(R.id.start)
         val p=getSharedPreferences("aft",0); base=p.getString("server",server.text.toString())?:server.text.toString()
         server.setText(base); childCode=p.getString("code","")?:""; if(childCode.isNotBlank()){showCode(childCode);start.isEnabled=true}
