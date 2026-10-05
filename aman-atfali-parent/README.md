@@ -5,3 +5,6 @@
 > مشاركة الموقع يجب أن تتم بموافقة واضحة وعلى جهاز الطفل مع إشعار Android ظاهر.
 
 ضع google-services.json داخل aman-atfali-parent/app/ عند تجهيز Firebase للإنتاج. الملف غير مضمّن في المستودع.
+
+
+Build trigger check.
