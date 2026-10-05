@@ -1,4 +1,4 @@
-name: Build Aman Atfali Child APK
+name: Build Aman Atfali Child APK — v0.2 Stable UI
 on:
   workflow_dispatch:
   push:
