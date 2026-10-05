@@ -1,15 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:fillViewport="true" android:background="#F5F8FC">
-<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="22dp" android:gravity="center_horizontal" android:layoutDirection="rtl">
-    <TextView android:text="أمان أطفالي" android:textSize="30sp" android:textStyle="bold" android:textColor="#102A43" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-    <TextView android:text="تطبيق جهاز الطفل" android:textSize="15sp" android:textColor="#64748B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-    <EditText android:id="@+id/server" android:hint="رابط موقع WordPress" android:inputType="textUri" android:text="https://www.chaibcalligraphy.com" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="28dp"/>
-    <EditText android:id="@+id/childName" android:hint="اسم الطفل" android:inputType="textPersonName" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="12dp"/>
-    <Button android:id="@+id/create" android:text="إنشاء رمز الربط" android:textSize="16sp" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="14dp"/>
-    <ImageView android:id="@+id/qr" android:layout_width="260dp" android:layout_height="260dp" android:layout_marginTop="20dp" android:contentDescription="رمز ربط الطفل"/>
-    <TextView android:id="@+id/code" android:text="لم يتم إنشاء رمز بعد" android:textSize="22sp" android:textStyle="bold" android:textColor="#2563EB" android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"/>
-    <TextView android:id="@+id/status" android:text="مشاركة الموقع متوقفة" android:textSize="15sp" android:textColor="#64748B" android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp"/>
-    <Button android:id="@+id/start" android:text="بدء مشاركة الموقع" android:textSize="16sp" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="12dp" android:enabled="false"/>
-    <TextView android:text="تتم مشاركة الموقع فقط بعد موافقة المستخدم، مع إشعار Android ظاهر أثناء التتبع." android:textSize="12sp" android:textColor="#64748B" android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"/>
-</LinearLayout>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F5F8FC">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp"
+        android:gravity="center_horizontal"
+        android:layoutDirection="rtl">
+        <TextView android:text="أمان أطفالي" android:textSize="30sp" android:textStyle="bold" android:textColor="#102A43" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        <TextView android:text="تطبيق جهاز الطفل" android:textSize="15sp" android:textColor="#64748B" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        <EditText android:id="@+id/server" android:hint="رابط موقع WordPress" android:inputType="textUri" android:text="https://www.chaibcalligraphy.com" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="28dp"/>
+        <EditText android:id="@+id/childName" android:hint="اسم الطفل" android:inputType="textPersonName" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="12dp"/>
+        <Button android:id="@+id/create" android:text="إنشاء رمز الربط" android:textSize="16sp" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="14dp"/>
+        <ImageView android:id="@+id/qr" android:layout_width="260dp" android:layout_height="260dp" android:layout_marginTop="20dp" android:contentDescription="رمز ربط الطفل"/>
+        <TextView android:id="@+id/code" android:text="لم يتم إنشاء رمز بعد" android:textSize="22sp" android:textStyle="bold" android:textColor="#2563EB" android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp"/>
+        <TextView android:id="@+id/status" android:text="مشاركة الموقع متوقفة" android:textSize="15sp" android:textColor="#64748B" android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp"/>
+        <Button android:id="@+id/start" android:text="بدء مشاركة الموقع" android:textSize="16sp" android:layout_width="match_parent" android:layout_height="55dp" android:layout_marginTop="12dp" android:enabled="false"/>
+        <TextView android:text="تتم مشاركة الموقع فقط بعد موافقة المستخدم، مع إشعار Android ظاهر أثناء التتبع." android:textSize="12sp" android:textColor="#64748B" android:gravity="center" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="20dp"/>
+    </LinearLayout>
 </ScrollView>
