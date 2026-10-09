@@ -375,8 +375,12 @@ jobs:
             echo "Verified signed AAB: $AAB"
           done < <(find "$ROOT" -type f -name '*.aab' -print0)
           if [ "$found" -eq 0 ]; then
-            echo "No AAB files found to sign."
-            exit 1
+            if [ "${{ inputs.build_variant || 'auto' }}" = "bundle" ]; then
+              echo "::error::Bundle build was requested, but no AAB file was found."
+              exit 1
+            fi
+            echo "No AAB produced by this APK build; skipping bundle signing."
+            exit 0
           fi
 
 
@@ -401,7 +405,7 @@ jobs:
       # Step 13: Upload APK artifact
       # ---------------------------------------------------------------------
       - name: Upload APK artifact
-        if: steps.collect.outputs.apk_count != '0' && steps.collect.outputs.apk_count != ''
+        if: always() && steps.collect.outputs.apk_count != '0' && steps.collect.outputs.apk_count != ''
         uses: actions/upload-artifact@v4
         with:
           name: AndroidForge-APKs
@@ -411,7 +415,7 @@ jobs:
           compression-level: 0
 
       - name: Upload AAB artifact (if any)
-        if: steps.collect.outputs.apk_count != '0' && steps.collect.outputs.apk_count != ''
+        if: always() && steps.collect.outputs.apk_count != '0' && steps.collect.outputs.apk_count != ''
         uses: actions/upload-artifact@v4
         with:
           name: AndroidForge-AAB
