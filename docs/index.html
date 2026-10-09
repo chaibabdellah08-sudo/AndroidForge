@@ -584,16 +584,36 @@
         }
         appendLog("  ✓ Workflow dispatched");
 
-        // 5. Wait briefly, then find the workflow_dispatch run.
+        // 5. Find the run created for THIS upload, not an older run.
+        // A ZIP upload also triggers the push workflow. The explicit dispatch
+        // may register later, so match the unique commit SHA and fall back to
+        // the push run for this same commit rather than selecting stale IDs.
         els.progressBar.style.width = "15%";
-        appendLog("→ Waiting for workflow run to register…");
-        await sleep(8000);
-        const runs = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=5&event=workflow_dispatch`);
-        // Pick the most recent dispatch run on this branch.
-        const run = (runs.workflow_runs || []).find(r =>
-          r.head_branch === repoInfo.default_branch && r.event === "workflow_dispatch"
-        );
-        if (!run) throw new Error("Could not find the dispatched workflow run");
+        appendLog("→ Waiting for the workflow run for this exact upload…");
+        let run = null;
+        for (let attempt = 1; attempt <= 12 && !run; attempt++) {
+          const dispatched = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=20&event=workflow_dispatch`);
+          run = (dispatched.workflow_runs || []).find(r =>
+            r.head_branch === repoInfo.default_branch &&
+            r.event === "workflow_dispatch" &&
+            r.head_sha === commitSha
+          );
+          if (run) {
+            appendLog(`  ✓ Matched workflow_dispatch run to upload commit ${commitSha.substring(0, 7)}`);
+            break;
+          }
+          if (attempt < 12) await sleep(2000);
+        }
+        if (!run) {
+          appendLog("  ⚠ No matching dispatch run registered; checking the automatic push run for this upload…");
+          const pushed = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=20&event=push`);
+          run = (pushed.workflow_runs || []).find(r =>
+            r.head_branch === repoInfo.default_branch &&
+            r.event === "push" &&
+            r.head_sha === commitSha
+          );
+        }
+        if (!run) throw new Error(`Could not find a build for uploaded commit ${commitSha.substring(0, 7)}. Open Actions and check whether workflow_dispatch is enabled.`);
         window._currentRunId = run.id;
         els.runId.textContent = run.id;
         els.runLink.href = run.html_url;
