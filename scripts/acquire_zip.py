@@ -78,7 +78,8 @@ def main() -> int:
     parser.add_argument("--source", default="input-directory",
                         choices=["input-directory", "download-url", "release-asset"])
     parser.add_argument("--url", default=None)
-    parser.add_argument("--tag", default=None)\n    parser.add_argument("--filename", default=None, help="Exact ZIP basename to use from input/")
+    parser.add_argument("--tag", default=None)
+    parser.add_argument("--filename", default=None, help="Exact ZIP basename to use from input/")
     parser.add_argument("--dest-dir", default=None)
     args = parser.parse_args()
 
