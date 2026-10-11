@@ -55,11 +55,6 @@ on:
         type: boolean
         required: false
         default: false
-  push:
-    branches:
-      - main
-    paths:
-      - "input/**.zip"
 
 # Never expose secrets to the (untrusted) uploaded source ZIP.
 # contents:write is required so the GITHUB_TOKEN can upload the built APK
@@ -475,9 +470,10 @@ jobs:
           name: AndroidForge-logs
           path: |
             .androidforge/logs/
-            ${{ steps.extract.outputs.project_root }}/build/outputs/
-            ${{ steps.extract.outputs.project_root }}/**/build/reports/
-            ${{ steps.extract.outputs.project_root }}/**/build/outputs/
+            detection.json
+            toolchain.json
+            build.json
+            collect.json
           if-no-files-found: ignore
           retention-days: 14
 
