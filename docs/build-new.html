@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- build-ui-fix-2026-10-09: exact uploaded commit tracking; prevents stale run IDs -->
+  <!-- build-ui-fix-2026-10-11: exact SHA run discovery, cache bypass, and bounded retry -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AndroidForge — Build Center (New)</title>
@@ -479,7 +479,8 @@
         "X-GitHub-Api-Version": "2022-11-28",
         ...(opts.headers || {}),
       };
-      return fetch(API + path, { ...opts, headers });
+      // Avoid cached API responses while searching for a just-created workflow run.
+      return fetch(API + path, { ...opts, headers, cache: "no-store" });
     }
     async function apiJson(path, opts = {}) {
       const res = await api(path, opts);
@@ -561,12 +562,7 @@
         window._currentCommitSha = commitSha;
         appendLog(`  ✓ Committed as ${commitSha.substring(0, 7)} (${commitPath})`);
 
-        // 4. Trigger workflow_dispatch with zip_source=input-directory.
-        //    The push to input/**.zip will ALSO trigger the workflow via
-        //    the push event filter, but we want a single deterministic
-        //    run with the user's chosen variant. So we trigger dispatch
-        //    explicitly — the push run will be cancelled by the
-        //    concurrency group OR we just pick the dispatch run by id.
+        // 4. Trigger exactly one workflow_dispatch for the uploaded ZIP.
         appendLog("→ Triggering build workflow…");
         const inputs = {
           zip_source: "input-directory",
@@ -576,53 +572,58 @@
           build_variant: els.variant.value,
           enable_ndk: els.enableNdk.checked,
         };
-        try {
-          await api(`/repos/${c.owner}/${c.repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
-            method: "POST",
-            body: JSON.stringify({ ref: repoInfo.default_branch, inputs }),
-            headers: { "Content-Type": "application/json" },
-          });
-        } catch (e) {
-          if (e.status && e.status >= 400) throw e;
+        const dispatchRes = await api(`/repos/${c.owner}/${c.repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+          method: "POST",
+          body: JSON.stringify({ ref: repoInfo.default_branch, inputs }),
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!dispatchRes.ok) {
+          const detail = (await dispatchRes.text()).slice(0, 300);
+          throw new Error(`GitHub rejected workflow dispatch (HTTP ${dispatchRes.status}): ${detail || "Check that the token has Actions: write permission."}`);
         }
-        appendLog("  ✓ Workflow dispatched");
+        appendLog("  ✓ GitHub accepted the workflow dispatch");
 
-        // 5. Find the run created for THIS upload, not an older run.
-        // A ZIP upload also triggers the push workflow. The explicit dispatch
-        // may register later, so match the unique commit SHA and fall back to
-        // the push run for this same commit rather than selecting stale IDs.
+        // 5. Find the workflow run for this exact source commit.
+        // Search by SHA rather than only event type: this is more resilient
+        // when GitHub's run list is delayed or its first page is busy.
         els.progressBar.style.width = "15%";
-        appendLog("→ Waiting for the workflow run for this exact upload…");
+        appendLog("→ Waiting for GitHub to register this build (up to 90 seconds)…");
         let run = null;
-        for (let attempt = 1; attempt <= 12 && !run; attempt++) {
-          const dispatched = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=20&event=workflow_dispatch`);
-          run = (dispatched.workflow_runs || []).find(r =>
+        for (let attempt = 1; attempt <= 30 && !run; attempt++) {
+          const bySha = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=100&head_sha=${encodeURIComponent(commitSha)}&_=${Date.now()}`);
+          const candidates = (bySha.workflow_runs || []).filter(r =>
             r.head_branch === repoInfo.default_branch &&
-            r.event === "workflow_dispatch" &&
-            r.head_sha === commitSha
+            r.head_sha === commitSha &&
+            typeof r.path === "string" &&
+            r.path.endsWith(`/${WORKFLOW_FILE}`)
           );
+          run = candidates.find(r => r.event === "workflow_dispatch") || candidates[0] || null;
+
+          // Fallback occasionally checks the unfiltered workflow-dispatch list.
+          if (!run && attempt % 3 === 0) {
+            const recent = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=100&event=workflow_dispatch&branch=${encodeURIComponent(repoInfo.default_branch)}&_=${Date.now()}`);
+            run = (recent.workflow_runs || []).find(r =>
+              r.head_branch === repoInfo.default_branch &&
+              r.event === "workflow_dispatch" &&
+              r.head_sha === commitSha &&
+              typeof r.path === "string" &&
+              r.path.endsWith(`/${WORKFLOW_FILE}`)
+            ) || null;
+          }
+
           if (run) {
-            appendLog(`  ✓ Matched workflow_dispatch run to upload commit ${commitSha.substring(0, 7)}`);
+            appendLog(`  ✓ Found build run #${run.run_number} (${run.id}) for commit ${commitSha.substring(0, 7)}`);
             break;
           }
-          if (attempt < 12) await sleep(2000);
+          if (attempt === 1 || attempt % 5 === 0) {
+            appendLog(`  ⏳ Still waiting for the run to appear (${attempt}/30)…`);
+          }
+          if (attempt < 30) await sleep(3000);
         }
         if (!run) {
-          appendLog("  ⚠ No matching dispatch run registered; checking the automatic push run for this upload…");
-          const pushed = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=20&event=push`);
-          run = (pushed.workflow_runs || []).find(r =>
-            r.head_branch === repoInfo.default_branch &&
-            r.event === "push" &&
-            r.head_sha === commitSha
-          );
+          throw new Error(`GitHub accepted the build request for commit ${commitSha.substring(0, 7)}, but the run is not visible yet. Open Actions and refresh; do not upload the ZIP again unless no run appears.`);
         }
-        if (!run) throw new Error(`Could not find a build for uploaded commit ${commitSha.substring(0, 7)}. Open Actions and check whether workflow_dispatch is enabled.`);
         window._currentRunId = run.id;
-        els.runId.textContent = run.id;
-        els.runLink.href = run.html_url;
-        appendLog(`  ✓ Run ${run.id} queued: ${run.html_url}`);
-        els.progressBar.style.width = "20%";
-
         // 6. Poll until completion
         startPolling(run.id);
       } catch (e) {
