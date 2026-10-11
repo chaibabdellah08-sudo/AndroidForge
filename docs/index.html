@@ -569,6 +569,7 @@
         appendLog("→ Triggering build workflow…");
         const inputs = {
           zip_source: "input-directory",
+          zip_filename: commitPath.split("/").pop(),
           zip_url: "",
           release_tag: "",
           build_variant: els.variant.value,
