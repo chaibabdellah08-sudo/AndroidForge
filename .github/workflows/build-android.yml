@@ -25,6 +25,11 @@ on:
           - "input-directory"
           - "download-url"
           - "release-asset"
+      zip_filename:
+        description: "Exact ZIP filename under input/ (required when multiple ZIPs exist)"
+        required: false
+        type: string
+        default: ""
       zip_url:
         description: "Direct download URL (only used if 'download-url' is selected)"
         required: false
@@ -114,7 +119,7 @@ jobs:
           python scripts/acquire_zip.py \
             --source "${{ inputs.zip_source || 'input-directory' }}" \
             --url "${{ inputs.zip_url }}" \
-            --tag "${{ inputs.release_tag }}"
+            --tag "${{ inputs.release_tag }}" \\\n            --filename "${{ inputs.zip_filename }}"
 
       # ---------------------------------------------------------------------
       # Step 2: Extract ZIP
