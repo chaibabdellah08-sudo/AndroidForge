@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- build-ui-fix-2026-10-09: exact uploaded commit tracking; prevents stale run IDs -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AndroidForge — Build Center (New)</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="description" content="Upload an Android source ZIP, run a GitHub Actions build, get an APK back." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmY3YTAwIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik02IDlsNiA2IDYtNiIvPjwvc3ZnPg==" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-2: #1c2330;
+      --border: #30363d;
+      --border-strong: #586069;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #ff7a00;
+      --accent-2: #ffb454;
+      --ok: #3fb950;
+      --err: #f85149;
+      --warn: #d29922;
+      --code: #f0f6fc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg); color: var(--text); line-height: 1.5;
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, #161b22 0%, #1c2330 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 24px; text-align: center;
+    }
+    header h1 {
+      margin: 0 0 6px; font-size: 32px; font-weight: 700;
+      color: var(--accent); letter-spacing: -0.5px;
+    }
+    header h1 .anvil { display: inline-block; transform: translateY(-2px); }
+    header p { margin: 0; color: var(--text-dim); font-size: 14px; }
+    main { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 24px; margin-bottom: 20px;
+    }
+    .card h2 {
+      margin: 0 0 16px; font-size: 18px; font-weight: 600; color: var(--text);
+      border-bottom: 1px solid var(--border); padding-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card h2 .step-num {
+      background: var(--accent); color: #1c0a00;
+      width: 26px; height: 26px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; flex-shrink: 0;
+    }
+    label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
+    input[type="text"], input[type="password"], select, .file-drop {
+      width: 100%; padding: 10px 12px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border-strong); border-radius: 6px; font-size: 14px;
+      font-family: inherit; outline: none; transition: border-color .15s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+    .file-drop {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      cursor: pointer; min-height: 80px; border-style: dashed;
+      text-align: center; color: var(--text-dim);
+    }
+    .file-drop:hover { border-color: var(--accent); color: var(--text); }
+    .file-drop.has-file { border-style: solid; color: var(--ok); border-color: var(--ok); }
+    .file-drop input { display: none; }
+    .row { margin-bottom: 16px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+    button {
+      background: var(--accent); color: #1c0a00; border: none; border-radius: 6px;
+      padding: 12px 22px; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background .15s, transform .05s;
+    }
+    button:hover:not(:disabled) { background: var(--accent-2); }
+    button:active:not(:disabled) { transform: translateY(1px); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border-strong); }
+    button.secondary:hover:not(:disabled) { background: var(--border); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .status {
+      padding: 12px 16px; border-radius: 6px; margin: 12px 0; font-size: 14px;
+      border-left: 4px solid; background: var(--panel-2);
+    }
+    .status.info { border-color: var(--accent); color: var(--accent-2); }
+    .status.ok { border-color: var(--ok); color: var(--ok); }
+    .status.err { border-color: var(--err); color: var(--err); }
+    .status.warn { border-color: var(--warn); color: var(--warn); }
+    .progress {
+      height: 8px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 4px; overflow: hidden; margin: 12px 0;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+      transition: width .5s ease; width: 0%;
+    }
+    .log {
+      background: #010409; color: var(--code); border: 1px solid var(--border);
+      border-radius: 6px; padding: 14px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 12px; max-height: 280px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+    }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .badge.queued { background: #21262d; color: var(--text-dim); }
+    .badge.in_progress { background: #1f6feb; color: white; }
+    .badge.success { background: #1a4d2e; color: var(--ok); }
+    .badge.failure, .badge.cancelled { background: #4a0e0e; color: var(--err); }
+    details summary {
+      cursor: pointer; color: var(--text-dim); font-size: 13px; padding: 6px 0;
+    }
+    details summary:hover { color: var(--text); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    @media (max-width: 640px) { .grid-3 { grid-template-columns: 1fr; } }
+    .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+    .stat .label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+    .stat .value { color: var(--accent); font-size: 18px; font-weight: 700; margin-top: 4px; word-break: break-all; }
+    .download-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 16px; margin: 10px 0;
+    }
+    .download-row .info { flex: 1; min-width: 0; }
+    .download-row .name { color: var(--text); font-weight: 600; font-size: 14px; word-break: break-all; }
+    .download-row .meta { color: var(--text-dim); font-size: 12px; margin-top: 4px; }
+    .download-row button, .download-row a > button { flex-shrink: 0; }
+    .primary-cta {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+      color: #1c0a00; border: none; border-radius: 8px;
+      padding: 16px 32px; font-size: 16px; font-weight: 800;
+      cursor: pointer; transition: transform .1s, box-shadow .15s;
+      box-shadow: 0 4px 16px rgba(255, 122, 0, .25);
+      text-decoration: none; display: inline-block;
+    }
+    .primary-cta:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(255, 122, 0, .35); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-2); text-decoration: underline; }
+    footer {
+      border-top: 1px solid var(--border); padding: 20px; text-align: center;
+      color: var(--text-dim); font-size: 12px;
+    }
+    .small { font-size: 12px; color: var(--text-dim); }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; max-width: 360px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 14px 18px; box-shadow: 0 8px 24px rgba(0,0,0,.5); z-index: 1000;
+      animation: slidein .3s ease;
+    }
+    @keyframes slidein {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .toast.err { border-color: var(--err); }
+    .toast.ok { border-color: var(--ok); }
+    .toast.warn { border-color: var(--warn); }
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid var(--text-dim); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .8s linear infinite; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .conn-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: 4px; font-size: 12px;
+      background: #1a4d2e; color: var(--ok); border: 1px solid #2a5d3e;
+    }
+    .conn-badge.warn { background: #4a3a0e; color: var(--warn); border-color: #5a4a1e; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span class="anvil">⚒️</span> AndroidForge</h1>
+    <p>Upload an Android source ZIP &rarr; we build the APK &rarr; you download it.</p>
+  </header>
+
+  <main>
+    <!-- ============================================ -->
+    <!-- Step 1: Connect with PAT only                -->
+    <!-- ============================================ -->
+    <section class="card" id="card-connect">
+      <h2><span class="step-num">1</span> Connect with your GitHub token</h2>
+      <div class="row">
+        <label for="pat">
+          GitHub Personal Access Token
+          <span class="small">(classic PAT with <code>repo</code> + <code>workflow</code> scopes, or fine-grained with <code>Contents: RW</code>, <code>Actions: RW</code>, <code>Releases: RW</code>)</span>
+        </label>
+        <input type="password" id="pat" placeholder="ghp_..." autocomplete="off" />
+        <div class="small" style="margin-top:6px;">
+          The PAT is stored only in your browser (localStorage) and is sent <strong>directly</strong> to <code>api.github.com</code>.
+          It never touches any other server. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">Create a token &rarr;</a>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="btn-save">Detect &amp; save</button>
+        <button class="secondary" id="btn-clear">Clear</button>
+        <span id="conn-status"></span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- Step 2: Upload                                -->
+    <!-- ============================================ -->
+    <section class="card" id="card-upload" style="display:none;">
+      <h2><span class="step-num">2</span> Upload source ZIP</h2>
+      <div class="row">
+        <label for="file-input" class="file-drop" id="file-drop">
+          <span id="file-label">📁 Drop or click to choose a .zip file</span>
+          <input type="file" id="file-input" accept=".zip,application/zip,application/x-zip-compressed" />
+        </label>
+      </div>
+      <div class="grid-2">
+        <div class="row">
+          <label for="variant">Build variant</label>
+          <select id="variant">
+            <option value="auto" selected>auto (try debug → release → bundle)</option>
+            <option value="debug">debug</option>
+            <option value="release">release</option>
+            <option value="bundle">bundle (.aab)</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="enable-ndk">
+            <input type="checkbox" id="enable-ndk" /> Force-install NDK
+          </label>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button id="btn-build" disabled>⚒️ Build APK</button>
+        <span id="upload-status" class="small"></span>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- Step 3: Build progress                        -->
+    <!-- ============================================ -->
+    <section class="card" id="card-progress" style="display:none;">
+      <h2><span class="step-num">3</span> Build progress</h2>
+      <div class="grid-3">
+        <div class="stat">
+          <div class="label">Status</div>
+          <div class="value" id="run-status"><span class="badge queued">queued</span></div>
+        </div>
+        <div class="stat">
+          <div class="label">Run ID</div>
+          <div class="value" id="run-id">—</div>
+        </div>
+        <div class="stat">
+          <div class="label">Elapsed</div>
+          <div class="value" id="run-elapsed">0:00</div>
+        </div>
+      </div>
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+      <div id="step-list" style="margin: 12px 0;"></div>
+      <details>
+        <summary>Live log</summary>
+        <div class="log" id="live-log">Connecting…</div>
+      </details>
+      <div class="btn-row" style="margin-top:14px;">
+        <a id="run-link" href="#" target="_blank" rel="noopener"><button class="secondary">Open run on GitHub &rarr;</button></a>
+        <button class="secondary" id="btn-cancel-poll">Stop polling</button>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <!-- Step 4: Result                                -->
+    <!-- ============================================ -->
+    <section class="card" id="card-result" style="display:none;">
+      <h2><span class="step-num">4</span> Download</h2>
+      <div id="result-content"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p><strong>New build page</strong> · AndroidForge &mdash; open-source universal Android APK builder.</p>
+    <a href="https://github.com/Professional-X/AndroidForge" target="_blank" rel="noopener">Source &rarr;</a>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <script>
+    // ====================================================================
+    // AndroidForge — Pages-side controller
+    //
+    // All GitHub API calls go DIRECTLY from the browser to
+    // api.github.com. No token ever leaves the browser except to
+    // api.github.com over HTTPS.
+    //
+    // IMPORTANT: APK download uses RELEASE ASSETS, not Actions artifacts.
+    // The workflow uploads the built APKs to the same release that hosts
+    // the source ZIP. Then the UI offers direct links to
+    //   https://github.com/<owner>/<repo>/releases/download/<tag>/<file>
+    // which the browser downloads as a regular navigation (no fetch, no
+    // CORS, no Authorization header dance).
+    // ====================================================================
+
+    const API = "https://api.github.com";
+    const STORAGE_KEY = "androidforge.conn.v2";
+    const WORKFLOW_FILE = "build-android.yml";
+    const RELEASE_TAG_PREFIX = "web-build-output-";
+
+    // ---------- DOM ----------
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      pat: $("pat"),
+      btnSave: $("btn-save"), btnClear: $("btn-clear"), connStatus: $("conn-status"),
+      cardUpload: $("card-upload"),
+      fileDrop: $("file-drop"), fileInput: $("file-input"), fileLabel: $("file-label"),
+      variant: $("variant"), enableNdk: $("enable-ndk"),
+      btnBuild: $("btn-build"), uploadStatus: $("upload-status"),
+      cardProgress: $("card-progress"),
+      runStatus: $("run-status"), runId: $("run-id"), runElapsed: $("run-elapsed"),
+      progressBar: $("progress-bar"), stepList: $("step-list"), liveLog: $("live-log"),
+      runLink: $("run-link"), btnStopPoll: $("btn-cancel-poll"),
+      cardResult: $("card-result"), resultContent: $("result-content"),
+    };
+
+    // ---------- Persistence ----------
+    function loadConn() {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); }
+      catch { return {}; }
+    }
+    function saveConn(c) { localStorage.setItem(STORAGE_KEY, JSON.stringify(c)); }
+    function clearConn() { localStorage.removeItem(STORAGE_KEY); }
+
+    function restoreConn() {
+      const c = loadConn();
+      els.pat.value = c.pat || "";
+      updateConnStatus();
+      if (c.pat && c.owner && c.repo) {
+        // Already connected — show the upload card.
+        els.cardUpload.style.display = "";
+        updateBuildBtn();
+      }
+    }
+    function updateConnStatus() {
+      const c = loadConn();
+      if (c.owner && c.repo && c.pat) {
+        els.connStatus.innerHTML = `<span class="conn-badge">✓ ${escapeHtml(c.owner)}/${escapeHtml(c.repo)}</span>`;
+      } else if (c.pat && (!c.owner || !c.repo)) {
+        els.connStatus.innerHTML = `<span class="conn-badge warn">PAT saved, repo not detected</span>`;
+      } else {
+        els.connStatus.textContent = "";
+      }
+    }
+
+    // ---------- Detect repo from PAT ----------
+    // 1. GET /user → returns { login: "username" }
+    // 2. Try GET /repos/<login>/AndroidForge
+    // 3. If not found, scan repos for one with build-android.yml workflow
+    async function detectRepo(pat) {
+      const headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": `Bearer ${pat}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      };
+      // 1. Get the user
+      const userRes = await fetch(`${API}/user`, { headers });
+      if (!userRes.ok) {
+        const t = await userRes.text();
+        throw new Error(`Cannot read user (HTTP ${userRes.status}): ${t.slice(0,200)}`);
+      }
+      const user = await userRes.json();
+      const owner = user.login;
+      // 2. Try the default name
+      const repoRes = await fetch(`${API}/repos/${owner}/AndroidForge`, { headers });
+      if (repoRes.ok) {
+        return { owner, repo: "AndroidForge" };
+      }
+      // 3. Scan user's repos for any that contains the workflow file
+      // List repos (max 100)
+      const listRes = await fetch(`${API}/user/repos?per_page=100&sort=updated`, { headers });
+      if (!listRes.ok) {
+        // Classic PAT without `repo` scope — likely will not work for uploads either.
+        throw new Error(`Cannot list your repos (HTTP ${listRes.status}). Make sure your PAT has the 'repo' scope.`);
+      }
+      const repos = await listRes.json();
+      // Filter to repos that have the workflow file
+      for (const r of repos) {
+        const checkRes = await fetch(`${API}/repos/${r.full_name}/contents/.github/workflows/${WORKFLOW_FILE}`, { headers });
+        if (checkRes.ok) {
+          return { owner: r.owner.login, repo: r.name };
+        }
+      }
+      throw new Error(`Could not find a repository with the AndroidForge workflow file. Please fork https://github.com/Professional-X/AndroidForge first.`);
+    }
+
+    els.btnSave.addEventListener("click", async () => {
+      const pat = els.pat.value.trim();
+      if (!pat) { toast("Enter your PAT first", "err"); return; }
+      els.btnSave.disabled = true;
+      els.connStatus.innerHTML = `<span class="conn-badge warn"><span class="spinner"></span> Detecting repo…</span>`;
+      try {
+        const { owner, repo } = await detectRepo(pat);
+        saveConn({ owner, repo, pat });
+        updateConnStatus();
+        els.cardUpload.style.display = "";
+        updateBuildBtn();
+        toast(`Connected to ${owner}/${repo}`, "ok");
+      } catch (e) {
+        toast(e.message, "err", 8000);
+        els.connStatus.innerHTML = `<span class="conn-badge warn">⚠ ${escapeHtml(e.message)}</span>`;
+      } finally {
+        els.btnSave.disabled = false;
+      }
+    });
+    els.btnClear.addEventListener("click", () => {
+      clearConn();
+      els.pat.value = "";
+      els.cardUpload.style.display = "none";
+      els.cardProgress.style.display = "none";
+      els.cardResult.style.display = "none";
+      currentFile = null;
+      els.fileLabel.textContent = "📁 Drop or click to choose a .zip file";
+      els.fileDrop.classList.remove("has-file");
+      updateConnStatus();
+      toast("Cleared", "warn");
+    });
+
+    // ---------- File picker ----------
+    let currentFile = null;
+    els.fileInput.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) setFile(f);
+    });
+    ["dragover", "dragenter"].forEach(ev => els.fileDrop.addEventListener(ev, (e) => {
+      e.preventDefault(); els.fileDrop.style.background = "#1c2330";
+    }));
+    ["dragleave", "drop"].forEach(ev => els.fileDrop.addEventListener(ev, (e) => {
+      e.preventDefault(); els.fileDrop.style.background = "";
+    }));
+    els.fileDrop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) setFile(f);
+    });
+    function setFile(f) {
+      if (!f.name.toLowerCase().endsWith(".zip")) {
+        toast("Please select a .zip file", "err");
+        return;
+      }
+      currentFile = f;
+      els.fileLabel.textContent = `📦 ${f.name} (${formatBytes(f.size)})`;
+      els.fileDrop.classList.add("has-file");
+      updateBuildBtn();
+    }
+    function updateBuildBtn() {
+      const c = loadConn();
+      els.btnBuild.disabled = !(currentFile && c.owner && c.repo && c.pat);
+    }
+
+    // ---------- Toast / status ----------
+    function toast(msg, kind = "info", ttl = 4000) {
+      const el = document.createElement("div");
+      el.className = `toast ${kind}`;
+      el.textContent = msg;
+      document.getElementById("toast-container").appendChild(el);
+      setTimeout(() => el.remove(), ttl);
+    }
+    function setStatus(el, msg, kind = "info") {
+      el.innerHTML = `<div class="status ${kind}">${msg}</div>`;
+    }
+
+    // ---------- API helpers ----------
+    async function api(path, opts = {}) {
+      const c = loadConn();
+      if (!c.pat) throw new Error("No PAT saved");
+      const headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": `Bearer ${c.pat}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...(opts.headers || {}),
+      };
+      return fetch(API + path, { ...opts, headers });
+    }
+    async function apiJson(path, opts = {}) {
+      const res = await api(path, opts);
+      let body = null;
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("json")) body = await res.json();
+      else body = await res.text();
+      if (!res.ok) {
+        const msg = (body && body.message) ? body.message : `HTTP ${res.status}`;
+        const err = new Error(msg);
+        err.status = res.status; err.body = body;
+        throw err;
+      }
+      return body;
+    }
+
+    // ---------- Build pipeline ----------
+    els.btnBuild.addEventListener("click", buildApk);
+    els.btnStopPoll.addEventListener("click", () => { stopPolling(); });
+
+    async function buildApk() {
+      const c = loadConn();
+      if (!c.owner || !c.repo || !c.pat) { toast("Detect your repo first (step 1)", "err"); return; }
+      if (!currentFile) { toast("Pick a ZIP first", "err"); return; }
+
+      // GitHub Contents API is unreliable for larger files; keep uploads within a conservative safe limit.
+      if (currentFile.size > 80 * 1024 * 1024) {
+        toast(`ZIP is ${formatBytes(currentFile.size)} — exceeds the 80 MB page limit. Please compress the source ZIP.`, "err", 8000);
+        return;
+      }
+
+      els.btnBuild.disabled = true;
+      els.cardProgress.style.display = "";
+      els.cardResult.style.display = "none";
+      els.liveLog.textContent = "";
+      els.stepList.innerHTML = "";
+      els.runStatus.innerHTML = '<span class="badge queued">queued</span>';
+      els.runId.textContent = "—";
+      els.runElapsed.textContent = "0:00";
+      els.progressBar.style.width = "5%";
+      appendLog("▶ Starting build pipeline…");
+
+      // Track state for the polling / result phases.
+      window._currentRunId = null;
+      window._currentCommitSha = null;
+
+      try {
+        // 1. Verify repo is reachable
+        appendLog("→ Verifying repository access…");
+        const repoInfo = await apiJson(`/repos/${c.owner}/${c.repo}`);
+        appendLog(`  ✓ ${repoInfo.full_name} (default branch: ${repoInfo.default_branch})`);
+
+        // 2. Read the ZIP file and convert to base64.
+        appendLog(`→ Reading ${currentFile.name} (${formatBytes(currentFile.size)})…`);
+        els.uploadStatus.textContent = "reading ZIP…";
+        const fileBuffer = await currentFile.arrayBuffer();
+        const base64Content = arrayBufferToBase64(fileBuffer);
+        appendLog(`  ✓ Read ${base64Content.length} chars of base64`);
+
+        // 3. Commit the ZIP to input/ via the GitHub Contents API.
+        //    This endpoint is on api.github.com (CORS-enabled), unlike
+        //    uploads.github.com (release asset uploads, no CORS).
+        const timestamp = Date.now();
+        const safeName = currentFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const commitPath = `input/web-build-${timestamp}-${safeName}`;
+        const commitMessage = `Web build upload: ${currentFile.name} [AndroidForge web UI]`;
+        appendLog(`→ Committing ${commitPath} to main branch…`);
+        els.uploadStatus.textContent = "committing ZIP to repo…";
+        const commitRes = await apiJson(`/repos/${c.owner}/${c.repo}/contents/${commitPath}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            message: commitMessage,
+            content: base64Content,
+            branch: repoInfo.default_branch,
+          }),
+          headers: { "Content-Type": "application/json" },
+        });
+        const commitSha = commitRes.commit.sha;
+        window._currentCommitSha = commitSha;
+        appendLog(`  ✓ Committed as ${commitSha.substring(0, 7)} (${commitPath})`);
+
+        // 4. Trigger workflow_dispatch with zip_source=input-directory.
+        //    The push to input/**.zip will ALSO trigger the workflow via
+        //    the push event filter, but we want a single deterministic
+        //    run with the user's chosen variant. So we trigger dispatch
+        //    explicitly — the push run will be cancelled by the
+        //    concurrency group OR we just pick the dispatch run by id.
+        appendLog("→ Triggering build workflow…");
+        const inputs = {
+          zip_source: "input-directory",
+          zip_filename: commitPath.split("/").pop(),
+          zip_url: "",
+          release_tag: "",
+          build_variant: els.variant.value,
+          enable_ndk: els.enableNdk.checked,
+        };
+        try {
+          await api(`/repos/${c.owner}/${c.repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`, {
+            method: "POST",
+            body: JSON.stringify({ ref: repoInfo.default_branch, inputs }),
+            headers: { "Content-Type": "application/json" },
+          });
+        } catch (e) {
+          if (e.status && e.status >= 400) throw e;
+        }
+        appendLog("  ✓ Workflow dispatched");
+
+        // 5. Find the run created for THIS upload, not an older run.
+        // A ZIP upload also triggers the push workflow. The explicit dispatch
+        // may register later, so match the unique commit SHA and fall back to
+        // the push run for this same commit rather than selecting stale IDs.
+        els.progressBar.style.width = "15%";
+        appendLog("→ Waiting for the workflow run for this exact upload…");
+        let run = null;
+        for (let attempt = 1; attempt <= 12 && !run; attempt++) {
+          const dispatched = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=20&event=workflow_dispatch`);
+          run = (dispatched.workflow_runs || []).find(r =>
+            r.head_branch === repoInfo.default_branch &&
+            r.event === "workflow_dispatch" &&
+            r.head_sha === commitSha
+          );
+          if (run) {
+            appendLog(`  ✓ Matched workflow_dispatch run to upload commit ${commitSha.substring(0, 7)}`);
+            break;
+          }
+          if (attempt < 12) await sleep(2000);
+        }
+        if (!run) {
+          appendLog("  ⚠ No matching dispatch run registered; checking the automatic push run for this upload…");
+          const pushed = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs?per_page=20&event=push`);
+          run = (pushed.workflow_runs || []).find(r =>
+            r.head_branch === repoInfo.default_branch &&
+            r.event === "push" &&
+            r.head_sha === commitSha
+          );
+        }
+        if (!run) throw new Error(`Could not find a build for uploaded commit ${commitSha.substring(0, 7)}. Open Actions and check whether workflow_dispatch is enabled.`);
+        window._currentRunId = run.id;
+        els.runId.textContent = run.id;
+        els.runLink.href = run.html_url;
+        appendLog(`  ✓ Run ${run.id} queued: ${run.html_url}`);
+        els.progressBar.style.width = "20%";
+
+        // 6. Poll until completion
+        startPolling(run.id);
+      } catch (e) {
+        appendLog(`✗ ERROR: ${e.message}`);
+        setStatus(els.uploadStatus, `✗ ${escapeHtml(e.message)}`, "err");
+        els.runStatus.innerHTML = '<span class="badge failure">failed</span>';
+        els.progressBar.style.width = "0%";
+        toast(e.message, "err", 6000);
+        els.btnBuild.disabled = false;
+      }
+    }
+
+    /** Convert an ArrayBuffer to a base64 string (chunked to avoid stack overflow). */
+    function arrayBufferToBase64(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const CHUNK = 0x8000; // 32 KB chunks
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        const slice = bytes.subarray(i, i + CHUNK);
+        binary += String.fromCharCode.apply(null, slice);
+      }
+      return btoa(binary);
+    }
+
+    // ---------- Polling ----------
+    let pollTimer = null;
+    let pollStart = null;
+    let lastStepCount = 0;
+    function startPolling(runId) {
+      stopPolling();
+      pollStart = Date.now();
+      lastStepCount = 0;
+      pollTimer = setInterval(() => pollRun(runId), 8000);
+      pollRun(runId);
+    }
+    function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+    async function pollRun(runId) {
+      const c = loadConn();
+      try {
+        const run = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs/${runId}`);
+        const elapsed = pollStart ? Math.floor((Date.now() - pollStart) / 1000) : 0;
+        els.runElapsed.textContent = formatDuration(elapsed);
+
+        const status = run.status;
+        const conclusion = run.conclusion;
+        let badge;
+        if (status === "queued") badge = '<span class="badge queued">queued</span>';
+        else if (status === "in_progress") badge = '<span class="badge in_progress">in progress</span>';
+        else if (conclusion === "success") badge = '<span class="badge success">success</span>';
+        else if (conclusion === "failure") badge = '<span class="badge failure">failed</span>';
+        else if (conclusion === "cancelled") badge = '<span class="badge cancelled">cancelled</span>';
+        else badge = `<span class="badge queued">${escapeHtml(conclusion || status || "—")}</span>`;
+        els.runStatus.innerHTML = badge;
+
+        let pct = 20;
+        if (status === "in_progress") pct = 50;
+        if (conclusion === "success" || conclusion === "failure" || conclusion === "cancelled") pct = 100;
+        els.progressBar.style.width = pct + "%";
+
+        const jobs = await apiJson(`/repos/${c.owner}/${c.repo}/actions/runs/${runId}/jobs`);
+        const steps = (jobs.jobs && jobs.jobs[0] && jobs.jobs[0].steps) || [];
+        if (steps.length !== lastStepCount) {
+          els.stepList.innerHTML = steps.map(s => {
+            const cls = s.conclusion === "success" ? "✅"
+                       : s.conclusion === "failure" ? "❌"
+                       : s.conclusion === "skipped" ? "⏭️"
+                       : s.status === "in_progress" ? "⏳"
+                       : "·";
+            return `<div class="small">${cls} ${escapeHtml(s.name)}</div>`;
+          }).join("");
+          lastStepCount = steps.length;
+        }
+        appendLog(`[poll ${new Date().toLocaleTimeString()}] status=${status} conclusion=${conclusion || "—"}`);
+
+        if (status === "completed") {
+          stopPolling();
+          await showResult(runId, conclusion);
+        }
+      } catch (e) {
+        appendLog(`[poll error] ${e.message}`);
+      }
+    }
+
+    // ---------- Result: direct release-asset download ----------
+    async function showResult(runId, conclusion) {
+      const c = loadConn();
+      els.cardResult.style.display = "";
+
+      try {
+        if (conclusion === "success") {
+          setStatus(els.resultContent, "✅ Build succeeded. Fetching your APK from the output release…", "ok");
+        } else {
+          setStatus(els.resultContent, `✗ Build finished with status: <strong>${conclusion}</strong>. Diagnostics are in the run logs below.`, "err");
+        }
+        const runUrl = `https://github.com/${c.owner}/${c.repo}/actions/runs/${runId}`;
+        els.resultContent.innerHTML += `<p class="small" style="margin-top:8px;">Run on GitHub: <a href="${runUrl}" target="_blank" rel="noopener">${runUrl}</a></p>`;
+        els.resultContent.innerHTML += `<p class="small" style="margin-top:8px;"><a href="${runUrl}" target="_blank" rel="noopener"><button class="secondary">Open run on GitHub &rarr;</button></a></p>`;
+
+        // For successful builds, the workflow creates a release with tag
+        // `web-build-output-<run_id>` and uploads the APKs there. Fetch
+        // that release and offer direct download links. These URLs are
+        // regular GitHub navigation URLs — the browser follows the 302
+        // to S3 automatically and saves the file. No fetch, no CORS,
+        // no auth headers.
+        if (conclusion === "success" && runId) {
+          const tag = `web-build-output-${runId}`;
+          // The release might not exist immediately after the run completes
+          // (race between workflow completion event and the release-create
+          // step). Retry a few times before giving up.
+          const maxAttempts = 8;
+          const retryDelayMs = 3000;
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+              await presentReleaseAssets(c, tag, runId);
+              break; // success — stop retrying
+            } catch (e) {
+              if (attempt >= maxAttempts) {
+                appendLog(`[result error] ${e.message}`);
+                els.resultContent.innerHTML += `<div class="status warn">Could not list release assets (tried ${maxAttempts}× over ${maxAttempts * retryDelayMs / 1000}s): ${escapeHtml(e.message)}. Use the GitHub run link above to download the artifact ZIP manually.</div>`;
+                break;
+              }
+              appendLog(`  ⏳ Release not ready yet, retrying in ${retryDelayMs / 1000}s… (attempt ${attempt + 1}/${maxAttempts})`);
+              await sleep(retryDelayMs);
+            }
+          }
+        }
+      } finally {
+        els.btnBuild.disabled = false;
+      }
+    }
+
+    /**
+     * Fetch the release created by the workflow for this run, render direct
+     * download buttons for every APK/AAB asset. Returns 200 OK if release
+     * exists; throws on 404 (release not yet created).
+     */
+    async function presentReleaseAssets(c, tag, runId) {
+      appendLog(`→ Listing release assets for tag ${tag}…`);
+      const release = await apiJson(`/repos/${c.owner}/${c.repo}/releases/tags/${tag}`);
+      const assets = (release.assets || []).filter(a =>
+        a.name.toLowerCase().endsWith(".apk") ||
+        a.name.toLowerCase().endsWith(".aab")
+      );
+      if (assets.length === 0) {
+        throw new Error("Release has no APK/AAB assets yet");
+      }
+      appendLog(`  ✓ Found ${assets.length} APK/AAB asset(s): ${assets.map(a => a.name).join(", ")}`);
+
+      // Pick primary: .apk > .aab, release > debug
+      const apkOnly = assets.filter(a => a.name.toLowerCase().endsWith(".apk"));
+      const pool = apkOnly.length ? apkOnly : assets;
+      const releasePool = pool.filter(a => /release/i.test(a.name));
+      const primary = releasePool[0] || pool[0];
+
+      let html = `<h3 style="margin-top:20px;">📦 Your APK</h3>`;
+      html += `
+        <div class="download-row" style="border-color: var(--accent); background: linear-gradient(135deg, rgba(255,122,0,0.08) 0%, rgba(255,180,84,0.04) 100%);">
+          <div class="info">
+            <div class="name">⭐ ${escapeHtml(primary.name)}</div>
+            <div class="meta">${formatBytes(primary.size)} · primary APK</div>
+          </div>
+          <a href="${primary.browser_download_url}" download="${escapeAttr(primary.name)}"><button class="primary-cta">⬇ Download APK</button></a>
+        </div>
+      `;
+
+      if (assets.length > 1) {
+        html += `<div class="small" style="margin-top:14px; margin-bottom:6px;">All produced files (${assets.length}):</div>`;
+        for (const a of assets) {
+          if (a === primary) continue;
+          const kind = a.name.toLowerCase().endsWith(".apk") ? "APK" : "AAB";
+          html += `
+            <div class="download-row">
+              <div class="info">
+                <div class="name">${escapeHtml(a.name)}</div>
+                <div class="meta">${formatBytes(a.size)} · ${kind}</div>
+              </div>
+              <a href="${a.browser_download_url}" download="${escapeAttr(a.name)}"><button class="secondary">⬇ Download</button></a>
+            </div>
+          `;
+        }
+      }
+
+      html += `
+        <p class="small" style="margin-top:16px;">
+          Prefer the GitHub UI? <a href="${release.html_url}" target="_blank" rel="noopener">Open this release on GitHub &rarr;</a>
+        </p>
+      `;
+
+      els.resultContent.innerHTML += html;
+    }
+
+    // ---------- Utilities ----------
+    function appendLog(line) {
+      els.liveLog.textContent += "\n" + line;
+      els.liveLog.scrollTop = els.liveLog.scrollHeight;
+    }
+    function escapeHtml(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function escapeAttr(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function formatBytes(n) {
+      if (!n) return "0 B";
+      const u = ["B", "KB", "MB", "GB"];
+      let i = 0;
+      while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+      return `${n.toFixed(1)} ${u[i]}`;
+    }
+    function formatDuration(sec) {
+      const m = Math.floor(sec / 60); const s = sec % 60;
+      return `${m}:${s.toString().padStart(2, "0")}`;
+    }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // ---------- Init ----------
+    restoreConn();
+  </script>
+</body>
+</html>
