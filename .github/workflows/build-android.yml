@@ -119,7 +119,8 @@ jobs:
           python scripts/acquire_zip.py \
             --source "${{ inputs.zip_source || 'input-directory' }}" \
             --url "${{ inputs.zip_url }}" \
-            --tag "${{ inputs.release_tag }}" \\\n            --filename "${{ inputs.zip_filename }}"
+            --tag "${{ inputs.release_tag }}" \\
+            --filename "${{ inputs.zip_filename }}"
 
       # ---------------------------------------------------------------------
       # Step 2: Extract ZIP
