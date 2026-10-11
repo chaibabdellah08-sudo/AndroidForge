@@ -14,18 +14,28 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 INPUT_DIR = REPO_ROOT / "input"
 
 
-def find_input_zip() -> Path | None:
+def find_input_zip(filename: str | None = None) -> Path | None:
     if not INPUT_DIR.exists():
         return None
-    zips = sorted(
-        (p for p in INPUT_DIR.iterdir() if p.is_file() and p.suffix.lower() == ".zip"),
-        key=lambda p: p.name.lower(),
-    )
+    zips = [p for p in INPUT_DIR.iterdir() if p.is_file() and p.suffix.lower() == ".zip"]
+    if filename:
+        # Match an explicitly selected ZIP by exact basename; never fall back
+        # to another project if the requested file is missing.
+        requested = Path(filename).name
+        match = next((p for p in zips if p.name == requested), None)
+        if match is None:
+            available = ", ".join(sorted(p.name for p in zips)) or "(none)"
+            raise RuntimeError(f"Requested ZIP '{requested}' not found in input/. Available: {available}")
+        return match
     if not zips:
         return None
-    # Use the lexicographically newest source ZIP. This prevents an older
-    # committed ZIP from silently winning when several builds are present.
-    return zips[-1]
+    if len(zips) > 1:
+        available = "\\n  - ".join(sorted(p.name for p in zips))
+        raise RuntimeError(
+            "Multiple ZIP files exist in input/. Select the exact source with the "
+            "--filename option to prevent building an old project:\\n  - " + available
+        )
+    return zips[0]
 
 
 def download(url: str, dest: Path) -> None:
@@ -68,7 +78,7 @@ def main() -> int:
     parser.add_argument("--source", default="input-directory",
                         choices=["input-directory", "download-url", "release-asset"])
     parser.add_argument("--url", default=None)
-    parser.add_argument("--tag", default=None)
+    parser.add_argument("--tag", default=None)\n    parser.add_argument("--filename", default=None, help="Exact ZIP basename to use from input/")
     parser.add_argument("--dest-dir", default=None)
     args = parser.parse_args()
 
@@ -77,9 +87,9 @@ def main() -> int:
     zip_path: Path | None = None
 
     if args.source == "input-directory":
-        zip_path = find_input_zip()
+        zip_path = find_input_zip(args.filename)
         if not zip_path:
-            print("ERROR: no .zip file found under input/.", file=sys.stderr)
+            print("ERROR acquiring source ZIP: no unambiguous ZIP found. Choose --filename or clean input/.", file=sys.stderr)
             return 1
         target = dest_dir / zip_path.name
         if zip_path != target:
