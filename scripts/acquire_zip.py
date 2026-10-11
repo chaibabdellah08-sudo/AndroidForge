@@ -30,10 +30,10 @@ def find_input_zip(filename: str | None = None) -> Path | None:
     if not zips:
         return None
     if len(zips) > 1:
-        available = "\\n  - ".join(sorted(p.name for p in zips))
+        available = "\n  - ".join(sorted(p.name for p in zips))
         raise RuntimeError(
             "Multiple ZIP files exist in input/. Select the exact source with the "
-            "--filename option to prevent building an old project:\\n  - " + available
+            "--filename option to prevent building an old project:\n  - " + available
         )
     return zips[0]
 
