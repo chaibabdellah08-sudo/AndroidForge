@@ -119,6 +119,13 @@ jobs:
           python scripts/acquire_zip.py \
             --source "${{ inputs.zip_source || 'input-directory' }}" \
             --url "${{ inputs.zip_url }}" \
+            --tag "${{ inputs.release_tag }}" \
+            --filename "${{ inputs.zip_filename }}"
+        id: acquire
+        run: |
+          python scripts/acquire_zip.py \
+            --source "${{ inputs.zip_source || 'input-directory' }}" \
+            --url "${{ inputs.zip_url }}" \
             --tag "${{ inputs.release_tag }}" \\
             --filename "${{ inputs.zip_filename }}"
 
