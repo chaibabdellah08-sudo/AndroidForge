@@ -141,6 +141,14 @@ jobs:
             echo "AdhanAlertActivity.java not found; skipping app-specific patch."
           fi
 
+          # Ensure Google Play receives a higher version code than the previously uploaded 68.
+          GRADLE_FILE="$ROOT/app/build.gradle"
+          if [ -f "$GRADLE_FILE" ]; then
+            sed -i "s/versionCode[[:space:]]\+68/versionCode 69/" "$GRADLE_FILE"
+            sed -i "s/versionName[[:space:]]\+'1\.7\.68'/versionName '1.7.69'/" "$GRADLE_FILE"
+            grep -E 'versionCode|versionName' "$GRADLE_FILE" || true
+          fi
+
       # ---------------------------------------------------------------------
       # Step 3: Detect project (writes detection.json)
       # ---------------------------------------------------------------------
