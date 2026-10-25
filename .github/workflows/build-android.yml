@@ -35,7 +35,7 @@ on:
         description: "Exact ZIP filename under input/ (required when multiple ZIPs exist)"
         required: false
         type: string
-        default: "SunaMishkat-v1.7.68-Icon-Fix-Source.zip"
+        default: "SunaMishkat-v1.7.68-Splash-Text-Removed.zip"
       zip_url:
         description: "Direct download URL (only used if 'download-url' is selected)"
         required: false
@@ -121,7 +121,7 @@ jobs:
             --source "${{ inputs.zip_source || 'input-directory' }}" \
             --url "${{ inputs.zip_url }}" \
             --tag "${{ inputs.release_tag }}" \
-            --filename "${{ inputs.zip_filename || 'SunaMishkat-v1.7.68-Icon-Fix-Source.zip' }}"
+            --filename "${{ inputs.zip_filename || 'SunaMishkat-v1.7.68-Splash-Text-Removed.zip' }}"
       - name: Extract source ZIP
         id: extract
         run: python scripts/extract_zip.py --zip "${{ steps.acquire.outputs.zip_path }}"
