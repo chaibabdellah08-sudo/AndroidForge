@@ -50,7 +50,7 @@ on:
         description: "Build variant to produce"
         type: choice
         required: true
-        default: "auto"
+        default: "debug"
         options:
           - "auto"
           - "debug"
