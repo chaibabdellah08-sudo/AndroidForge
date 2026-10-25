@@ -388,14 +388,12 @@ jobs:
         id: collect
         if: always()
         run: |
+          set -e
           python "$GITHUB_WORKSPACE/scripts/collect_apk.py" \
             --root "${{ steps.extract.outputs.project_root }}" \
             --variant "${{ inputs.build_variant || 'auto' }}" \
             --output-dir "$GITHUB_WORKSPACE/output" \
-            --output-json "$GITHUB_WORKSPACE/collect.json" || true
-          if [ ! -f "$GITHUB_WORKSPACE/collect.json" ]; then
-            echo '{"apk_count": 0, "primary": null, "all_apks": []}' > "$GITHUB_WORKSPACE/collect.json"
-          fi
+            --output-json "$GITHUB_WORKSPACE/collect.json"
           cat "$GITHUB_WORKSPACE/collect.json"
 
       # ---------------------------------------------------------------------
